@@ -190,7 +190,7 @@ def build_substack_email(title, html_content, image_path):
     <head>
         <meta charset="UTF-8">
         <style>
-            body {
+            body {{
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
                 line-height: 1.6;
                 color: #333;
@@ -198,9 +198,9 @@ def build_substack_email(title, html_content, image_path):
                 margin: 0 auto;
                 padding: 20px;
             }
-            h1 { font-size: 2em; margin-bottom: 0.5em; }
-            h2 { font-size: 1.5em; margin-top: 1.5em; }
-            img { max-width: 100%; height: auto; }
+            h1 {{ font-size: 2em; margin-bottom: 0.5em; }}
+            h2 {{ font-size: 1.5em; margin-top: 1.5em; }}
+            img {{ max-width: 100%; height: auto; }}
         </style>
     </head>
     <body>
