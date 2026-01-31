@@ -2,6 +2,12 @@ import yaml
 from pathlib import Path
 import os
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 def load_credentials(config_path: Path) -> dict:
     """
     Load credentials from YAML config
