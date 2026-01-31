@@ -197,7 +197,7 @@ def build_substack_email(title, html_content, image_path):
                 max-width: 680px;
                 margin: 0 auto;
                 padding: 20px;
-            }
+            }}
             h1 {{ font-size: 2em; margin-bottom: 0.5em; }}
             h2 {{ font-size: 1.5em; margin-top: 1.5em; }}
             img {{ max-width: 100%; height: auto; }}
