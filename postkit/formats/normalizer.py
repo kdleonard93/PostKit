@@ -2,8 +2,18 @@ from pathlib import Path
 from typing import Dict, Any
 import re
 
-def normalize_for_platforms(post_data, image_path, video_path) -> Dict[str, Any]:
+def normalize_for_platforms(
+    post_data: Dict[str, Any],
+    image_path: Optional[Path] = None,
+    video_path: Optional[Path] = None
+) -> Dict[str, Any]:
     """
+    Transform content for each platform
+    
+    Takes the parsed markdown and creates platform-specific versions:
+    - AT Protocol (Bluesky/Flashes/Pinksky): Threads and summaries
+    - Substack: Full HTML email
+    
     Returns:
     {
         'atproto': {
@@ -19,7 +29,83 @@ def normalize_for_platforms(post_data, image_path, video_path) -> Dict[str, Any]
         }
     }
     """
+    content = post_data['content']
+    title = post_data['title']
+    short = post_data.get('short', '')
+    tags = post_data.get('tags', [])
+    html = post_data['html']
     
+    # Create thread chunks (for Bluesky/Pinksky)
+    thread_chunks = create_thread_chunks(content, title, max_length=280)
+    
+    # Create summary (for Flashes)
+    if short:
+        # Use the 'short' from frontmatter if provided
+        summary = short
+    else:
+        # Extract first paragraph as summary
+        first_para = extract_first_paragraph(content)
+        summary = truncate_text(first_para, 280)
+    
+    # Add title to summary if it's not already there
+    if title.lower() not in summary.lower():
+        summary = f"{title}\n\n{summary}"
+        summary = truncate_text(summary, 280)
+    
+    # Format hashtags
+    hashtags = [f"#{tag.strip().replace(' ', '')}" for tag in tags]
+        
+    # Build HTML email for Substack
+    email_html = build_substack_email(title, html, image_path)
+    
+    return {
+        'atproto': {
+            'thread': thread_chunks,
+            'summary': summary,
+            'hashtags': hashtags,
+            'image': image_path,
+            'video': video_path,
+            'title': title
+        },
+        'substack': {
+            'title': title,
+            'html': email_html,
+            'subject': title,
+            'tags': tags
+        }
+    }
+
+    
+def extract_first_paragraph(content: str) -> str:
+    """
+    Get the first paragraph from markdown content
+    Used for creating summaries
+    """
+    # Remove any frontmatter
+    content = re.sub(r'^---\s*\n.*?\n---\s*\n', '', content, flags=re.DOTALL)
+    
+    # Remove headers (lines starting with #)
+    content = re.sub(r'^#+\s+.+$', '', content, flags=re.MULTILINE)
+    
+    # Split by blank lines and get first non-empty paragraph
+    paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
+    return paragraphs[0] if paragraphs else ''
+
+
+def truncate_text(text: str, max_length: int, ellipsis: str = '...') -> str:
+    """
+    Cut text to max_length, adding ... at the end
+    """
+    if len(text) <= max_length:
+        return text
+    
+    cutoff = text.rfind(' ', 0, max_length - len(ellipsis))
+    if cutoff == -1:
+        cutoff = max_length - len(ellipsis)
+    
+    return text[:cutoff] + ellipsis
+
+
 def create_thread_chunks(content, title, max_length=280):
     """
     Smart chunking strategy:
