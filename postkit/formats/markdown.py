@@ -69,7 +69,9 @@ def markdown_to_html(markdown_text: str) -> str:
         import markdown
         md = markdown.Markdown(extensions=['extra'])
         return md.convert(markdown_text)
-    except:
+    except ImportError:
+        return basic_markdown_to_html(markdown_text)
+    except Exception:
         return basic_markdown_to_html(markdown_text)
     
 def basic_markdown_to_html(text: str) -> str:
