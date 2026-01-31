@@ -1,0 +1,2 @@
+[console_scripts]
+postkit = postkit.cli:main

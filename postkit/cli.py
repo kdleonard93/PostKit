@@ -36,7 +36,12 @@ def publish(
     if dry_run:
         console.print("\n[bold cyan]📋 Dry Run Preview[/bold cyan]\n")
         console.print(f"Title: {post_data['title']}")
-        console.print(f"Platforms: Bluesky, Flashes, Pinksky, Substack")
+        console.print(f"Short: {post_data.get('short', 'N/A')}")
+        
+        # Show what would be posted to each platform
+        console.print("\n[bold]Normalized content:[/bold]")
+        console.print(f"AT Protocol thread chunks: {len(normalized['atproto']['thread'])}")
+        console.print(f"Substack email to: {creds.get('substack', {}).get('email', 'N/A')}")
         return
     
     # Publish
