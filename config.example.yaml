@@ -1,0 +1,9 @@
+atproto:
+  handle: your-handle.bsky.social
+  password: your-app-password
+substack:
+  email: publication@substack.com
+  smtp_host: smtp.gmail.com
+  smtp_password: your-app-password
+  smtp_port: 587
+  smtp_user: you@gmail.com
