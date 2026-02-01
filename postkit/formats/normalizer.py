@@ -101,69 +101,106 @@ def truncate_text(text: str, max_length: int, ellipsis: str = '...') -> str:
     return text[:cutoff] + ellipsis
 
 
-def create_thread_chunks(content, title, max_length=280):
+def create_thread_chunks(content, title, max_length=300):
     """
-    Thread Chunking for AT Protocol
+    Smart chunking strategy with reserved space for thread numbering
+    
+    Strategy:
+    1. Make initial chunks with conservative limit
+    2. Calculate suffix length based on total chunks
+    3. Re-chunk if needed to ensure all fit within max_length
     """
-    chunks = []
     
-    clean_content = content
-    
-    clean_content = re.sub(r'^#\s+.+$', '', clean_content, flags=re.MULTILINE)
-    
-    clean_content = re.sub(r'^##\s+(.+)$', r'▸ \1', clean_content, flags=re.MULTILINE)
-    clean_content = re.sub(r'^###\s+(.+)$', r'• \1', clean_content, flags=re.MULTILINE)
-    
-    paragraphs = [p.strip() for p in clean_content.split('\n\n') if p.strip()]
-    
-    paragraphs = [p for p in paragraphs if p]
-    
-    if paragraphs:
-        first_chunk = f"{title}\n\n{paragraphs[0]}"
-        if len(first_chunk) <= max_length:
-            chunks.append(first_chunk)
-            remaining = paragraphs[1:]
-        else:
-            chunks.append(truncate_text(title, max_length))
-            remaining = paragraphs
-    else:
-        chunks.append(title)
-        remaining = []
-    
-    current_chunk = ""
-    for para in remaining:
-        test_chunk = f"{current_chunk}\n\n{para}" if current_chunk else para
+    # Helper function to do the actual chunking
+    def chunk_content(effective_max_length):
+        chunks = []
         
-        if len(test_chunk) <= max_length:
-            current_chunk = test_chunk
-        else:
-            if current_chunk:
-                chunks.append(current_chunk)
-            
-            if len(para) > max_length:
-                sentences = re.split(r'(?<=[.!?])\s+', para)
-                temp_chunk = ""
-                
-                for sentence in sentences:
-                    test_sentence = f"{temp_chunk} {sentence}".strip() if temp_chunk else sentence
-                    
-                    if len(test_sentence) <= max_length:
-                        temp_chunk = test_sentence
-                    else:
-                        if temp_chunk:
-                            chunks.append(temp_chunk)
-                        temp_chunk = sentence if len(sentence) <= max_length else truncate_text(sentence, max_length)
-                
-                current_chunk = temp_chunk
+        clean_content = content
+        clean_content = re.sub(r'^#\s+.+$', '', clean_content, flags=re.MULTILINE)
+        clean_content = re.sub(r'^##\s+(.+)$', r'▸ \1', clean_content, flags=re.MULTILINE)
+        clean_content = re.sub(r'^###\s+(.+)$', r'• \1', clean_content, flags=re.MULTILINE)
+        
+        # Split into paragraphs
+        paragraphs = [p.strip() for p in clean_content.split('\n\n') if p.strip()]
+        paragraphs = [p for p in paragraphs if p]
+        
+        # First chunk: Title + first paragraph
+        if paragraphs:
+            first_chunk = f"{title}\n\n{paragraphs[0]}"
+            if len(first_chunk) <= effective_max_length:
+                chunks.append(first_chunk)
+                remaining = paragraphs[1:]
             else:
-                current_chunk = para
+                # Title alone
+                chunks.append(truncate_text(title, effective_max_length))
+                remaining = paragraphs
+        else:
+            chunks.append(truncate_text(title, effective_max_length))
+            remaining = []
+        
+        # Process remaining paragraphs
+        current_chunk = ""
+        for para in remaining:
+            test_chunk = f"{current_chunk}\n\n{para}" if current_chunk else para
+            
+            if len(test_chunk) <= effective_max_length:
+                current_chunk = test_chunk
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                
+                if len(para) > effective_max_length:
+                    sentences = re.split(r'(?<=[.!?])\s+', para)
+                    temp_chunk = ""
+                    
+                    for sentence in sentences:
+                        test_sentence = f"{temp_chunk} {sentence}".strip() if temp_chunk else sentence
+                        
+                        if len(test_sentence) <= effective_max_length:
+                            temp_chunk = test_sentence
+                        else:
+                            if temp_chunk:
+                                chunks.append(temp_chunk)
+                            temp_chunk = sentence if len(sentence) <= effective_max_length else truncate_text(sentence, effective_max_length)
+                    
+                    current_chunk = temp_chunk
+                else:
+                    current_chunk = para
+        
+        if current_chunk:
+            chunks.append(current_chunk)
+        
+        return chunks
     
-    if current_chunk:
-        chunks.append(current_chunk)
+    # Initial chunking with conservative estimate
+    # Assume max 2-digit numbering: "\n\n(99/99)" = 10 chars
+    initial_reserved = 10
+    chunks = chunk_content(max_length - initial_reserved)
     
     total = len(chunks)
     if total > 1:
+        suffix_length = len(f"\n\n({total}/{total})")
+        
+        if suffix_length != initial_reserved:
+            chunks = chunk_content(max_length - suffix_length)
+            total = len(chunks)
+            
+            new_suffix_length = len(f"\n\n({total}/{total})")
+            
+            iteration_count = 0
+            while new_suffix_length != suffix_length and iteration_count < 5:
+                suffix_length = new_suffix_length
+                chunks = chunk_content(max_length - suffix_length)
+                total = len(chunks)
+                new_suffix_length = len(f"\n\n({total}/{total})")
+                iteration_count += 1
+        
         chunks = [f"{chunk}\n\n({i+1}/{total})" for i, chunk in enumerate(chunks)]
+        
+        chunks = [
+            chunk if len(chunk) <= max_length else truncate_text(chunk, max_length)
+            for chunk in chunks
+        ]
     
     return chunks
 
