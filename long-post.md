@@ -9,7 +9,7 @@ Command-line tools are powerful. They're fast, scriptable, and perfect for autom
 
 ## What You'll Need
 
-Python 3.8 or newer and basic programming knowledge. We'll use the `typer` library to make a beautiful CLI interface.
+Python 3.8 or newer and basic programming knowledge. We'll use the `typer` library to make a beautiful CLI.
 
 ## Step 1: Setup
 

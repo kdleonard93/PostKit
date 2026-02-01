@@ -35,19 +35,14 @@ def normalize_for_platforms(
     tags = post_data.get('tags', [])
     html = post_data['html']
     
-    # Create thread chunks (for Bluesky/Pinksky)
-    thread_chunks = create_thread_chunks(content, title, max_length=280)
+    thread_chunks = create_thread_chunks(content, title, max_length=300)
     
-    # Create summary (for Flashes)
     if short:
-        # Use the 'short' from frontmatter if provided
         summary = short
     else:
-        # Extract first paragraph as summary
         first_para = extract_first_paragraph(content)
         summary = truncate_text(first_para, 280)
     
-    # Add title to summary if it's not already there
     if title.lower() not in summary.lower():
         summary = f"{title}\n\n{summary}"
         summary = truncate_text(summary, 280)
@@ -108,7 +103,7 @@ def truncate_text(text: str, max_length: int, ellipsis: str = '...') -> str:
 
 def create_thread_chunks(content, title, max_length=280):
     """
-    Thread Chunking fo Bluesky
+    Thread Chunking for AT Protocol
     """
     chunks = []
     

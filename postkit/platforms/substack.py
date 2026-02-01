@@ -29,18 +29,18 @@ class SubstackPublisher:
             # Handle different ports
             if self.smtp_port == 465:
                 # Use SSL
-                server = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
-                server.ehlo()
+                with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port) as server:
+                    server.ehlo()
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.send_message(msg)
             else:
                 # Use TLS
-                server = smtplib.SMTP(self.smtp_host, self.smtp_port)
-                server.ehlo()
-                server.starttls()
-                server.ehlo()
-            
-            server.login(self.smtp_user, self.smtp_password)
-            server.send_message(msg)
-            server.quit()
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.send_message(msg)
             
             return True
         except Exception as e:
