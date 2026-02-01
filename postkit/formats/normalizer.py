@@ -108,30 +108,21 @@ def truncate_text(text: str, max_length: int, ellipsis: str = '...') -> str:
 
 def create_thread_chunks(content, title, max_length=280):
     """
-    Smart chunking strategy:
-    
-    1. First chunk: Title + opening paragraph
-    2. Split remaining by paragraphs (double newline)
-    3. If paragraph > max_length, split by sentences
-    4. Add thread numbering: "(1/5)", "(2/5)", etc.
-    5. Attach image to first chunk only
-    
-    Example output:
-    [
-        "My Great Post\n\nThis is the opening...\n\n(1/5)",
-        "Second paragraph content here...\n\n(2/5)",
-        ...
-    ]
+    Thread Chunking fo Bluesky
     """
     chunks = []
     
-    # Clean content (remove markdown headers)
-    clean_content = re.sub(r'^#+\s+', '', content, flags=re.MULTILINE)
+    clean_content = content
     
-    # Split into paragraphs
+    clean_content = re.sub(r'^#\s+.+$', '', clean_content, flags=re.MULTILINE)
+    
+    clean_content = re.sub(r'^##\s+(.+)$', r'▸ \1', clean_content, flags=re.MULTILINE)
+    clean_content = re.sub(r'^###\s+(.+)$', r'• \1', clean_content, flags=re.MULTILINE)
+    
     paragraphs = [p.strip() for p in clean_content.split('\n\n') if p.strip()]
     
-    # First chunk: title + first paragraph
+    paragraphs = [p for p in paragraphs if p]
+    
     if paragraphs:
         first_chunk = f"{title}\n\n{paragraphs[0]}"
         if len(first_chunk) <= max_length:
@@ -140,8 +131,10 @@ def create_thread_chunks(content, title, max_length=280):
         else:
             chunks.append(truncate_text(title, max_length))
             remaining = paragraphs
+    else:
+        chunks.append(title)
+        remaining = []
     
-    # Process remaining paragraphs
     current_chunk = ""
     for para in remaining:
         test_chunk = f"{current_chunk}\n\n{para}" if current_chunk else para
@@ -152,25 +145,27 @@ def create_thread_chunks(content, title, max_length=280):
             if current_chunk:
                 chunks.append(current_chunk)
             
-            # If paragraph itself is too long, split by sentences
             if len(para) > max_length:
                 sentences = re.split(r'(?<=[.!?])\s+', para)
-                temp = ""
+                temp_chunk = ""
+                
                 for sentence in sentences:
-                    if len(temp) + len(sentence) + 1 <= max_length:
-                        temp = f"{temp} {sentence}".strip()
+                    test_sentence = f"{temp_chunk} {sentence}".strip() if temp_chunk else sentence
+                    
+                    if len(test_sentence) <= max_length:
+                        temp_chunk = test_sentence
                     else:
-                        if temp:
-                            chunks.append(temp)
-                        temp = sentence
-                current_chunk = temp
+                        if temp_chunk:
+                            chunks.append(temp_chunk)
+                        temp_chunk = sentence if len(sentence) <= max_length else truncate_text(sentence, max_length)
+                
+                current_chunk = temp_chunk
             else:
                 current_chunk = para
     
     if current_chunk:
         chunks.append(current_chunk)
     
-    # Add thread numbering
     total = len(chunks)
     if total > 1:
         chunks = [f"{chunk}\n\n({i+1}/{total})" for i, chunk in enumerate(chunks)]
