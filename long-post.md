@@ -3,7 +3,7 @@ short: A beginner's guide to creating command-line tools with Python
 tags: python, tutorial, coding
 ---
 
-# Building Your First CLI Tool
+# Testing a longer post + steps on using the tool
 
 Command-line tools are powerful. They're fast, scriptable, and perfect for automation. Here's how to build one.
 

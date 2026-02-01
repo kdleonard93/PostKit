@@ -170,14 +170,24 @@ def create_thread_chunks(content, title, max_length=300):
                                 word_chunk = ""
                                 
                                 for word in words:
-                                    test_word_chunk = f"{word_chunk} {word}".strip() if word_chunk else word
-                                    
-                                    if len(test_word_chunk) <= effective_max_length:
-                                        word_chunk = test_word_chunk
-                                    else:
+                                    if len(word) > effective_max_length:
+                                        # Word is too long - split into fixed-size slices
                                         if word_chunk:
                                             chunks.append(word_chunk)
-                                        word_chunk = word
+                                            word_chunk = ""
+                                        # Split word into slices of effective_max_length
+                                        for i in range(0, len(word), effective_max_length):
+                                            slice_part = word[i:i + effective_max_length]
+                                            chunks.append(slice_part)
+                                    else:
+                                        test_word_chunk = f"{word_chunk} {word}".strip() if word_chunk else word
+                                        
+                                        if len(test_word_chunk) <= effective_max_length:
+                                            word_chunk = test_word_chunk
+                                        else:
+                                            if word_chunk:
+                                                chunks.append(word_chunk)
+                                            word_chunk = word
                                 
                                 temp_chunk = word_chunk
                     
